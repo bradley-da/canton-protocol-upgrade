@@ -1,0 +1,9 @@
+utils.retry_until_true(
+  participantA.parties.list().exists(p => p.party.uid.id == "alice")
+  && participantB.parties.list().exists(p => p.party.uid.id == "bob")
+)
+
+utils.generate_daml_script_participants_conf(
+  file=Some("/canton/host/configs/participant-config.json"),
+  defaultParticipant=Some(participantB)
+)

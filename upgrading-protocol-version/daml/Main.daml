@@ -1,0 +1,53 @@
+module Main where
+
+import Daml.Script
+import DA.Functor (void)
+import DA.Foldable (forA_)
+import DA.Text
+
+template AgreementProposal
+  with 
+    proposer : Party 
+    proposee : Party 
+  where 
+    signatory proposer 
+    observer proposee
+
+    choice AcceptProposal : ContractId Agreement
+      controller proposee 
+      do 
+        create Agreement with ..
+
+template Agreement 
+  with 
+    proposer : Party 
+    proposee : Party 
+  where 
+    signatory proposer, proposee
+
+setup : Script()
+setup = void do
+  alice <- findOrAllocatePartyOn "alice" $ ParticipantName "participantA"
+  bob <- findOrAllocatePartyOn "bob" $ ParticipantName "participantB" 
+  
+  debugRaw $ "Creating agreements for " <> show alice
+  proposals <- forA [1..5] \_ -> submit alice do createCmd AgreementProposal with proposer = alice, proposee = bob 
+
+  debugRaw $ "Accepting agreements fpr " <> show bob 
+  forA_ proposals \p -> submit bob do exerciseCmd p AcceptProposal
+
+-------------------------------------
+-- Helpers:
+
+findPartyInDetails : Text -> [PartyDetails] -> Optional Party 
+findPartyInDetails displayName partyDetails = 
+   (.party) <$> find (\n -> n.displayName == Some (displayName) || isPrefixOf ("'" <> displayName <> "::") (show n.party)) partyDetails
+        
+findPartyOn : Text -> ParticipantName -> Script (Optional Party)
+findPartyOn displayName participant =
+  findPartyInDetails displayName . filter isLocal <$> listKnownPartiesOn participant
+
+findOrAllocatePartyOn : Text -> ParticipantName -> Script Party
+findOrAllocatePartyOn displayName participant = do
+  opParty <- findPartyOn displayName participant
+  optional (allocatePartyWithHintOn displayName (PartyIdHint displayName) participant) pure opParty

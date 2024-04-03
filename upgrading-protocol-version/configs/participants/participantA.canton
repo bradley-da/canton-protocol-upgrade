@@ -1,0 +1,4 @@
+participantA.domains.connect("olddomain", connection="http://olddomain:5001")
+participantA.dars.upload("/canton/host/dist/upgrade-pv-demo-0.1.0.dar")
+
+participantA.parties.enable("alice")

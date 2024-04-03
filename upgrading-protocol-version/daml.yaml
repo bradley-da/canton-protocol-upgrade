@@ -1,0 +1,9 @@
+sdk-version: 2.3.0
+name: upgrade-pv-demo
+source: daml
+version: 0.1.0
+dependencies:
+  - daml-prim
+  - daml-stdlib
+  - daml-script
+data-dependencies:

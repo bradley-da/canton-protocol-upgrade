@@ -1,0 +1,186 @@
+networks:
+  default:
+    name: upgrading_protocol_version
+
+volumes:
+  postgres:
+    name: canton_postgres
+
+services:
+
+  canton_postgres:
+    image: postgres:14.10
+    container_name: canton-postgres
+    profiles:
+      - "startup"
+      - "all"
+    environment:
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./configs/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d postgres -U postgres" ]
+      interval: 1s
+      timeout: 5s
+      retries: 1
+    expose:
+      - 5432
+    ports:
+      - 5432:5432
+
+  olddomain:
+    container_name: olddomain
+    profiles:
+      - "startup"
+      - "all"
+    image: digitalasset-docker.jfrog.io/canton-enterprise:2.3.15
+    volumes:
+      - ./configs:/canton/host/configs:r
+    command: daemon --config "/canton/host/configs/domains/domain.conf" --log-profile container --log-level-root INFO
+    depends_on:
+      canton_postgres:
+        condition: service_healthy
+    expose:
+      - 5001
+      - 5002
+    ports:
+      - 5001:5001
+      - 5002:5002
+
+  originator:
+    container_name: participantB
+    profiles:
+      - "startup"
+      - "all"
+    image: digitalasset-docker.jfrog.io/canton-enterprise:2.3.15
+    volumes:
+      - ./configs:/canton/host/configs:r
+      - ./.daml/dist/:/canton/host/dist/:r
+    command: daemon --config "/canton/host/configs/participants/participantB.conf" --bootstrap "/canton/host/configs/participants/participantB.canton" --log-profile container --log-level-root INFO
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "/usr/local/bin/grpc_health_probe",
+          "--addr",
+          "participantB:5861"
+        ]
+    depends_on:
+      olddomain:
+        condition: service_started
+      canton_postgres:
+        condition: service_healthy
+    expose:
+      - 5005
+      - 5006
+    ports:
+      - 5005:5005
+      - 5006:5006
+
+  investor:
+    container_name: participantA
+    profiles:
+      - "startup"
+      - "all"
+    image: digitalasset-docker.jfrog.io/canton-enterprise:2.3.15
+    volumes:
+      - ./configs:/canton/host/configs:r
+      - ./.daml/dist/:/canton/host/dist/:r
+    command: daemon --config "/canton/host/configs/participants/participantA.conf" --bootstrap "/canton/host/configs/participants/participantA.canton" --log-profile container --log-level-root INFO
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "/usr/local/bin/grpc_health_probe",
+          "--addr",
+          "participantA:5861"
+        ]
+    depends_on:
+      olddomain:
+        condition: service_started
+      canton_postgres:
+        condition: service_healthy
+    expose:
+      - 5007
+      - 5008
+    ports:
+      - 5007:5007
+      - 5008:5008
+  
+  console:
+    container_name: console
+    profiles:
+      - "all"
+    image: digitalasset-docker.jfrog.io/canton-enterprise:2.8.3
+    volumes:
+      - ./:/canton/host/:rw
+    command:
+      - --no-tty
+      - -c=/canton/host/configs/remote/remote.conf
+
+  # The new domain and participants with updated binaries
+  newdomain:
+    container_name: newdomain
+    profiles:
+      - "new-domain"
+      - "all"
+    image: digitalasset-docker.jfrog.io/canton-enterprise:2.8.3
+    volumes:
+      - ./configs:/canton/host/configs:r
+    command: --config "/canton/host/configs/domains/newdomain.conf" --log-profile container --log-level-root INFO
+    expose:
+      - 5003
+      - 5004
+    ports:
+      - 5003:5003
+      - 5004:5004
+
+  participantA_new:
+    container_name: participantA
+    profiles:
+      - "updated-participants"
+      - "all"
+    image: digitalasset-docker.jfrog.io/canton-enterprise:2.8.3
+    volumes:
+      - ./configs:/canton/host/configs:r
+      - ./.daml/dist/:/canton/host/dist/:r
+    command: --config "/canton/host/configs/participants/newparticipantA.conf" --log-profile container --log-level-root Info 
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "/usr/local/bin/grpc_health_probe",
+          "--addr",
+          "participantA:5861"
+        ]
+    expose:
+      - 5007
+      - 5008
+    ports:
+      - 5007:5007
+      - 5008:5008
+
+  participantB_new:
+    container_name: participantB
+    profiles:
+      - "updated-participants"
+      - "all"
+    image: digitalasset-docker.jfrog.io/canton-enterprise:2.8.3
+    volumes:
+      - ./configs:/canton/host/configs:r
+      - ./.daml/dist/:/canton/host/dist/:r
+    command: daemon --config "/canton/host/configs/participants/newparticipantB.conf" --log-profile container --log-level-root INFO
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "/usr/local/bin/grpc_health_probe",
+          "--addr",
+          "participantB:5861"
+        ]
+    expose:
+      - 5005
+      - 5006
+    ports:
+      - 5005:5005
+      - 5006:5006
