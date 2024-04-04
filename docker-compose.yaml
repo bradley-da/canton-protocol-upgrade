@@ -127,7 +127,7 @@ services:
     image: digitalasset-docker.jfrog.io/canton-enterprise:2.8.3
     volumes:
       - ./configs:/canton/host/configs:r
-    command: --config "/canton/host/configs/domains/newdomain.conf" --log-profile container --log-level-root INFO
+    command: daemon --config "/canton/host/configs/domains/newdomain.conf" --log-profile container --log-level-root INFO
     expose:
       - 5003
       - 5004
@@ -144,7 +144,7 @@ services:
     volumes:
       - ./configs:/canton/host/configs:r
       - ./.daml/dist/:/canton/host/dist/:r
-    command: --config "/canton/host/configs/participants/newparticipantA.conf" --log-profile container --log-level-root Info 
+    command: daemon --config "/canton/host/configs/participants/newparticipantA.conf" --log-profile container --log-level-root Info 
     healthcheck:
       test:
         [
