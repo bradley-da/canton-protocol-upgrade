@@ -2,7 +2,7 @@ val logger = consoleEnvironment.environment.loggerFactory.getLogger(this.getClas
 
 logger.info("Disconnecting all participants from the domain")
 for (p <- participants.remote) {
-    p.domains.disconnect("npdomain")
+    p.domains.disconnect("olddomain")
     p.domains.list_connected() 
     logger.info(p.id + " successfully disconnected")
 }
@@ -13,7 +13,7 @@ val config = DomainConnectionConfig("newdomain", GrpcSequencerConnection.tryCrea
 logger.info("Migrating all participants to the new domain")
 for (p <- participants.remote) {
     logger.info("Migrating " + p.id + " to the new domain")
-    p.repair.migrate_domain("npdomain", config)  
+    p.repair.migrate_domain("olddomain", config)  
     logger.info(p.id + " successfully migrated to the new domain")
 }
 

@@ -53,11 +53,7 @@ docker compose run --rm  console
 @ participantb.resources.set_resource_limits(ResourceLimits(Some(0), Some(0)))
 ```
 
-4. Backup the participant databases to allow to roll back in case of failure.
-```
-docker cp ./configs/postgres/backup.sql canton-postgres:/docker-entrypoint-initdb.d/backup.sql
-docker exec -u postgres canton-postgres psql -f docker-entrypoint-initdb.d/backup.sql
-```
+4. In a production environment now would be a good time to backup the participant databases to allow for a role back in case of failure.
 
 #### _Note_ Steps 5 - 11 can be performed via a [canton script](./configs/remote/migrate.canton). `docker compose run migrate` .
 

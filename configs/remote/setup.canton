@@ -5,5 +5,5 @@ utils.retry_until_true(
 
 utils.generate_daml_script_participants_conf(
   file=Some("/canton/host/configs/participant-config.json"),
-  defaultParticipant=Some(participantB)
+  defaultParticipant=Some(participantb)
 )
