@@ -1,10 +1,12 @@
 # Demo
 
-How to upgrade a set of Canton nodes to new _binaries_ and a new _protocol version_.
+How to perform a Hard domain migration typically used in upgrading protocol versions. 
+
+This demo shows 2 possible ways of performing this. 
+- Using a canton console and manually running the commands 
+- Using canton scripts to automate the process 
 
 ### Docs:
-
-* [Upgrading Canton Binary](https://docs.daml.com/Canton/usermanual/upgrading.html#upgrade-Canton-binary)
 
 * [Upgrading Protocol Version](https://docs.daml.com/Canton/usermanual/upgrading.html#change-the-Canton-protocol-version)
 
@@ -19,46 +21,50 @@ daml build
 ```
 docker compose --profile startup up -d
 ```
+3. Upload contracts to the participants
+```
+docker compose run --rm contracts
+```
 
 ### Upgrade Process:
-1. Start a new domain with new binaries and protocol version. Note this domain must be completely independent of the old domain.
+1. Start a new domain with new protocol version. Note this domain must be completely independent of the old domain.
 ```
 docker compose --profile new-domain up -d
 ```
 
-2. Bring down the participants
-```
-docker compose down investor originator
-``` 
+#### _Note_ Alternatively steps 2 and 3 below can be performed via a [canton script](./configs/remote/remove-resources.canton). `docker compose run remove_resources`
 
-3. Backup the participant databases to allow to roll back in case of failure.
+2. Enter a Canton console from a new terminal connected to both domains as well as the participants. Note the flag `features.enable-repair-commands=yes` must be enabled within the remote config.
+```
+docker compose run --rm  console
+```
+
+3. Save the resource limits of the participants for restoring after the upgrade process and then set the limits to 0. _(Within the Canton console)_
+
+```
+@ val participantA_resources = participantA.resources.resource_limits()
+@ utils.write_to_file(participantA_resources.toProtoV0, "/canton/host/configs/participantA_resources.pb")
+@ participantA.resources.set_resource_limits(ResourceLimits(Some(0), Some(0)))
+
+@ val participantB_resource = participantB.resources.resource_limits()
+@ utils.write_to_file(participantB_resource.toProtoV0, "/canton/host/configs/participantB_resource.pb")
+@ participantB.resources.set_resource_limits(ResourceLimits(Some(0), Some(0)))
+```
+
+4. Backup the participant databases to allow to roll back in case of failure.
 ```
 docker cp ./configs/postgres/backup.sql canton-postgres:/docker-entrypoint-initdb.d/backup.sql
 docker exec -u postgres canton-postgres psql -f docker-entrypoint-initdb.d/backup.sql
 ```
-4. Restart participants with new binaries and [migrate](https://docs.daml.com/Canton/usermanual/upgrading.html#migrating-the-database) the databases. For this demo the configuration option `Canton.participants.participant1.storage.parameters.migrate-and-start = yes` has been set within the participants config files. This allows for automatic schema migrations on startup. Therefore the nodes simply need to be restarted with the new binaries and db migrations are done automatically.
 
-```
-docker compose --profile updated-participants up -d
-```
-
-#### Note: Steps 5 - 11 can be run via canton script with the command ...
+#### _Note_ Steps 5 - 11 can be performed via a [canton script](./configs/remote/migrate.canton). `docker compose run migrate` .
 
 5. Enter a Canton console from a new terminal connected to both domains as well as the participants. Note the flag `features.enable-repair-commands=yes` must be enabled within the remote config.
 ```
 docker compose run --rm  console
 ```
 
-6. Save the resource limits of the participants for restoring after the upgrade process and then set the limits to 0. _(Within the Canton console)_
-```
-@ val participantA_resources = participantA.resources.resource_limits()
-@ participantA.resources.set_resource_limits(ResourceLimits(Some(0), Some(0))) 
-
-@ val participantB_resources = participantB.resources.resource_limits()
-@ participantB.resources.set_resource_limits(ResourceLimits(Some(0), Some(0)))
-```
-
-7. Disconnect the participants from the domain and ensure they are disconnected by listing the connected domains. This should return an empty array. _(Within the Canton console)_
+6. Disconnect the participants from the domain and ensure they are disconnected by listing the connected domains. This should return an empty array. _(Within the Canton console)_
 ```
 @ participantA.domains.disconnect("olddomain")
 @ participantA.domains.list_connected() 
@@ -67,7 +73,7 @@ docker compose run --rm  console
 @ participantB.domains.list_connected() 
 ```
 
-8. Migrate participants to the new domain _(Within the Canton console)_
+7. Migrate participants to the new domain _(Within the Canton console)_
 
 * Set the sequencer connection configuration for the new domain 
 ```
@@ -80,7 +86,7 @@ docker compose run --rm  console
 @ participantB.repair.migrate_domain("olddomain", config) 
 ```
 
-9. Reconnect the participants. Note that if the migration has been succesful the only domain the participants should connect to is the new domain. This can be tested with:  `participant.domains.list_connected()` _(Within the Canton console)_
+8. Reconnect the participants. Note that if the migration has been succesful the only domain the participants should connect to is the new domain. This can be tested with:  `participant.domains.list_connected()` _(Within the Canton console)_
 ```
 @ participantA.domains.reconnect_all() 
 @ participantA.domains.list_connected() 
@@ -89,20 +95,20 @@ docker compose run --rm  console
 @ participantB.domains.list_connected() 
 ```
 
-10. Remove the resource limits on participants _(Within the Canton console)_
+9. Restore the resource limits on participants _(Within the Canton console)_
 ```
 @ participantA.resources.set_resource_limits(participantA_resources)
 @ participantB.resources.set_resource_limits(participantB_resources)
 ```
 
-11. Check to ensure system is healthy by pinging the nodes from each other _(Within the Canton console)_
+10. Check to ensure system is healthy by pinging the nodes from each other _(Within the Canton console)_
 
 ```
 @ participantA.health.ping(participantB)
 @ participantB.health.ping(participantA)
 ```
 
-12. Remove the old existing domain
+11. Remove the old existing domain
 
 ```
 docker compose down olddomain

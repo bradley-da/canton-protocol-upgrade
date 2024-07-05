@@ -33,7 +33,7 @@ services:
     profiles:
       - "startup"
       - "all"
-    image: digitalasset-docker.jfrog.io/canton-enterprise:2.3.15
+    image: digitalasset-docker.jfrog.io/canton-enterprise:2.8.5
     volumes:
       - ./configs:/canton/host/configs:r
     command: daemon --config "/canton/host/configs/domains/domain.conf" --log-profile container --log-level-root INFO
@@ -47,12 +47,12 @@ services:
       - 5001:5001
       - 5002:5002
 
-  originator:
+  participantB:
     container_name: participantB
     profiles:
       - "startup"
       - "all"
-    image: digitalasset-docker.jfrog.io/canton-enterprise:2.3.15
+    image: digitalasset-docker.jfrog.io/canton-enterprise:2.8.5
     volumes:
       - ./configs:/canton/host/configs:r
       - ./.daml/dist/:/canton/host/dist/:r
@@ -77,12 +77,12 @@ services:
       - 5005:5005
       - 5006:5006
 
-  investor:
+  participantA:
     container_name: participantA
     profiles:
       - "startup"
       - "all"
-    image: digitalasset-docker.jfrog.io/canton-enterprise:2.3.15
+    image: digitalasset-docker.jfrog.io/canton-enterprise:2.8.5
     volumes:
       - ./configs:/canton/host/configs:r
       - ./.daml/dist/:/canton/host/dist/:r
@@ -111,7 +111,7 @@ services:
     container_name: console
     profiles:
       - "all"
-    image: digitalasset-docker.jfrog.io/canton-enterprise:2.8.3
+    image: digitalasset-docker.jfrog.io/canton-enterprise:2.8.5
     volumes:
       - ./:/canton/host/:rw
     command:
@@ -124,7 +124,7 @@ services:
     profiles:
       - "new-domain"
       - "all"
-    image: digitalasset-docker.jfrog.io/canton-enterprise:2.8.3
+    image: digitalasset-docker.jfrog.io/canton-enterprise:2.8.5
     volumes:
       - ./configs:/canton/host/configs:r
     command: daemon --config "/canton/host/configs/domains/newdomain.conf" --log-profile container --log-level-root INFO
@@ -135,52 +135,30 @@ services:
       - 5003:5003
       - 5004:5004
 
-  participantA_new:
-    container_name: participantA
+  remove_resources:
+    container_name: remove_resources
     profiles:
-      - "updated-participants"
       - "all"
-    image: digitalasset-docker.jfrog.io/canton-enterprise:2.8.3
+    image: digitalasset-docker.jfrog.io/canton-enterprise:2.8.5
     volumes:
-      - ./configs:/canton/host/configs:r
-      - ./.daml/dist/:/canton/host/dist/:r
-    command: daemon --config "/canton/host/configs/participants/newparticipantA.conf" --log-profile container --log-level-root Info 
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "/usr/local/bin/grpc_health_probe",
-          "--addr",
-          "participantA:5861"
-        ]
-    expose:
-      - 5007
-      - 5008
-    ports:
-      - 5007:5007
-      - 5008:5008
+      - ./configs:/canton/host/configs:rw
+    command: run /canton/host/configs/remote/remove-resources.canton --config "/canton/host/configs/remote/remote.conf" --log-profile container --log-level-root INFO
 
-  participantB_new:
-    container_name: participantB
+  migrate:
+    container_name: migrate
     profiles:
-      - "updated-participants"
       - "all"
-    image: digitalasset-docker.jfrog.io/canton-enterprise:2.8.3
+    image: digitalasset-docker.jfrog.io/canton-enterprise:2.8.5
+    volumes:
+      - ./configs:/canton/host/configs:rw
+    command: run /canton/host/configs/remote/migrate.canton --config "/canton/host/configs/remote/remote.conf" --log-profile container --log-level-root INFO
+
+  contracts:
+    container_name: contracts
+    profiles:
+      - "all"
+    image: digitalasset-docker.jfrog.io/daml-script:2.8.5
     volumes:
       - ./configs:/canton/host/configs:r
       - ./.daml/dist/:/canton/host/dist/:r
-    command: daemon --config "/canton/host/configs/participants/newparticipantB.conf" --log-profile container --log-level-root INFO
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "/usr/local/bin/grpc_health_probe",
-          "--addr",
-          "participantB:5861"
-        ]
-    expose:
-      - 5005
-      - 5006
-    ports:
-      - 5005:5005
-      - 5006:5006
+    command: --dar /canton/host/dist/upgrade-pv-demo-0.1.0.dar --script-name Main:setup --participant-config /canton/host/configs/participant-config.json

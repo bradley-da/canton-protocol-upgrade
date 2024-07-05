@@ -3,6 +3,7 @@ module Main where
 import Daml.Script
 import DA.Functor (void)
 import DA.Foldable (forA_)
+import DA.Time (seconds)
 import DA.Text
 
 template AgreementProposal
@@ -32,6 +33,8 @@ setup = void do
   
   debugRaw $ "Creating agreements for " <> show alice
   proposals <- forA [1..5] \_ -> submit alice do createCmd AgreementProposal with proposer = alice, proposee = bob 
+  
+  sleep $ seconds 2
 
   debugRaw $ "Accepting agreements fpr " <> show bob 
   forA_ proposals \p -> submit bob do exerciseCmd p AcceptProposal

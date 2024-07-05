@@ -1,0 +1,42 @@
+val logger = consoleEnvironment.environment.loggerFactory.getLogger(this.getClass)
+
+logger.info("Disconnecting all participants from the domain")
+for (p <- participants.remote) {
+    p.domains.disconnect("npdomain")
+    p.domains.list_connected() 
+    logger.info(p.id + " successfully disconnected")
+}
+
+logger.info("Setting new domains connection configuration")
+val config = DomainConnectionConfig("newdomain", GrpcSequencerConnection.tryCreate("http://newdomain:5003"))
+
+logger.info("Migrating all participants to the new domain")
+for (p <- participants.remote) {
+    logger.info("Migrating " + p.id + " to the new domain")
+    p.repair.migrate_domain("npdomain", config)  
+    logger.info(p.id + " successfully migrated to the new domain")
+}
+
+logger.info("Reconnecting the participants to the new domain")
+for (p <- participants.remote) {
+    logger.info("Reconnecting " + p.id + " to the new domain")
+    p.domains.reconnect_all() 
+    p.domains.list_connected() 
+    logger.info(p.id + " successfully reconnected")
+}
+
+logger.info("Restoring the participants Resource limits")
+for (p <- participants.remote) {
+    logger.info("Reading " + p.id + " original resource limits from file")
+    val rl = utils.read_first_message_from_file[com.digitalasset.canton.participant.admin.v0.ResourceLimits]("/canton/host/configs/" + (p.id) + ".pb")
+    logger.info("Restoring resource limits to " + p.id)
+    p.resources.set_resource_limits(ResourceLimits(Some(rl.maxDirtyRequests), Some(rl.maxRate),rl.maxBurstFactor))
+}
+
+logger.info("Testing system health with cross participant pings")
+for (p1 <- participants.remote) {
+  for (p2 <- participants.remote) {
+    logger.info("Pinging " + p2.id + " from " + p1.id)
+    p1.health.ping(p2.id)
+  }
+}
