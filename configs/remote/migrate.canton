@@ -1,19 +1,23 @@
 val logger = consoleEnvironment.environment.loggerFactory.getLogger(this.getClass)
 
+val oldDomain = sys.env.get("OLD_DOMAIN").getOrElse(sys.error("OLD_DOMAIN is not defined"))
+val newDomain = sys.env.get("NEW_DOMAIN").getOrElse(sys.error("NEW_DOMAIN is not defined"))
+val newDomainAddress = sys.env.get("NEW_DOMAIN_ADDRESS").getOrElse(sys.error("NEW_DOMAIN_ADDRESS is not defined"))
+
 logger.info("Disconnecting all participants from the domain")
 for (p <- participants.remote) {
-    p.domains.disconnect("olddomain")
+    p.domains.disconnect(oldDomain)
     p.domains.list_connected() 
     logger.info(p.id + " successfully disconnected")
 }
 
 logger.info("Setting new domains connection configuration")
-val config = DomainConnectionConfig("newdomain", GrpcSequencerConnection.tryCreate("http://newdomain:5003"))
+val config = DomainConnectionConfig(newDomain, GrpcSequencerConnection.tryCreate(newDomainAddress))
 
 logger.info("Migrating all participants to the new domain")
 for (p <- participants.remote) {
     logger.info("Migrating " + p.id + " to the new domain")
-    p.repair.migrate_domain("olddomain", config)  
+    p.repair.migrate_domain(oldDomain, config)  
     logger.info(p.id + " successfully migrated to the new domain")
 }
 

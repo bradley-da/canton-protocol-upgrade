@@ -55,14 +55,9 @@ docker compose run --rm  console
 
 4. In a production environment now would be a good time to backup the participant databases to allow for a role back in case of failure.
 
-#### _Note_ Steps 5 - 11 can be performed via a [canton script](./configs/remote/migrate.canton). `docker compose run migrate` .
+#### _Note_ Steps 5 - 9 can be performed via a [canton script](./configs/remote/migrate.canton). `docker compose run migrate` .
 
-5. Enter a Canton console from a new terminal connected to both domains as well as the participants. Note the flag `features.enable-repair-commands=yes` must be enabled within the remote config.
-```
-docker compose run --rm  console
-```
-
-6. Disconnect the participants from the domain and ensure they are disconnected by listing the connected domains. This should return an empty array. _(Within the Canton console)_
+5. Disconnect the participants from the domain and ensure they are disconnected by listing the connected domains. This should return an empty array. _(Within the Canton console)_
 ```
 @ participanta.domains.disconnect("olddomain")
 @ participanta.domains.list_connected() 
@@ -71,7 +66,7 @@ docker compose run --rm  console
 @ participantb.domains.list_connected() 
 ```
 
-7. Migrate participants to the new domain _(Within the Canton console)_
+6. Migrate participants to the new domain _(Within the Canton console)_
 
 * Set the sequencer connection configuration for the new domain 
 ```
@@ -84,7 +79,7 @@ docker compose run --rm  console
 @ participantb.repair.migrate_domain("olddomain", config) 
 ```
 
-8. Reconnect the participants. Note that if the migration has been succesful the only domain the participants should connect to is the new domain. This can be tested with:  `participant.domains.list_connected()` _(Within the Canton console)_
+7. Reconnect the participants. Note that if the migration has been succesful the only domain the participants should connect to is the new domain. This can be tested with:  `participant.domains.list_connected()` _(Within the Canton console)_
 ```
 @ participanta.domains.reconnect_all() 
 @ participanta.domains.list_connected() 
@@ -93,26 +88,26 @@ docker compose run --rm  console
 @ participantb.domains.list_connected() 
 ```
 
-9. Restore the resource limits on participants _(Within the Canton console)_
+8. Restore the resource limits on participants _(Within the Canton console)_
 ```
 @ participanta.resources.set_resource_limits(participanta_resources)
 @ participantb.resources.set_resource_limits(participantb_resources)
 ```
 
-10. Check to ensure system is healthy by pinging the nodes from each other _(Within the Canton console)_
+9. Check to ensure system is healthy by pinging the nodes from each other _(Within the Canton console)_
 
 ```
 @ participanta.health.ping(participantb)
 @ participantb.health.ping(participanta)
 ```
 
-11. Remove the old existing domain
+10. Remove the old existing domain
 
 ```
 docker compose down olddomain
 ```
 
-12. Upload additional contracts to the participants as a final test.
+11. Upload additional contracts to the participants as a final test.
 ```
 docker compose run --rm contracts
 ```

@@ -166,6 +166,10 @@ services:
     profiles:
       - "all"
     image: digitalasset-docker.jfrog.io/canton-enterprise:2.8.5
+    environment:
+      - OLD_DOMAIN=olddomain
+      - NEW_DOMAIN=newdomain
+      - NEW_DOMAIN_ADDRESS=http://newdomain:5003
     volumes:
       - ./configs:/canton/host/configs:rw
     command: run /canton/host/configs/remote/migrate.canton --config "/canton/host/configs/remote/remote.conf" --log-profile container --log-level-root INFO
