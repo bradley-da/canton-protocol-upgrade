@@ -47,8 +47,8 @@ services:
       - 5001:5001
       - 5002:5002
 
-  participantB:
-    container_name: participantB
+  participantb:
+    container_name: participantb
     profiles:
       - "startup"
       - "all"
@@ -56,14 +56,14 @@ services:
     volumes:
       - ./configs:/canton/host/configs:r
       - ./.daml/dist/:/canton/host/dist/:r
-    command: daemon --config "/canton/host/configs/participants/participantB.conf" --bootstrap "/canton/host/configs/participants/participantB.canton" --log-profile container --log-level-root INFO
+    command: daemon --config "/canton/host/configs/participants/participantb.conf" --bootstrap "/canton/host/configs/participants/participantb.canton" --log-profile container --log-level-root INFO
     healthcheck:
       test:
         [
           "CMD",
           "/usr/local/bin/grpc_health_probe",
           "--addr",
-          "participantB:5861"
+          "participantb:5861"
         ]
     depends_on:
       olddomain:
@@ -77,8 +77,8 @@ services:
       - 5005:5005
       - 5006:5006
 
-  participantA:
-    container_name: participantA
+  participanta:
+    container_name: participanta
     profiles:
       - "startup"
       - "all"
@@ -86,14 +86,14 @@ services:
     volumes:
       - ./configs:/canton/host/configs:r
       - ./.daml/dist/:/canton/host/dist/:r
-    command: daemon --config "/canton/host/configs/participants/participantA.conf" --bootstrap "/canton/host/configs/participants/participantA.canton" --log-profile container --log-level-root INFO
+    command: daemon --config "/canton/host/configs/participants/participanta.conf" --bootstrap "/canton/host/configs/participants/participanta.canton" --log-profile container --log-level-root INFO
     healthcheck:
       test:
         [
           "CMD",
           "/usr/local/bin/grpc_health_probe",
           "--addr",
-          "participantA:5861"
+          "participanta:5861"
         ]
     depends_on:
       olddomain:
@@ -106,17 +106,6 @@ services:
     ports:
       - 5007:5007
       - 5008:5008
-  
-  console:
-    container_name: console
-    profiles:
-      - "all"
-    image: digitalasset-docker.jfrog.io/canton-enterprise:2.8.5
-    volumes:
-      - ./:/canton/host/:rw
-    command:
-      - --no-tty
-      - -c=/canton/host/configs/remote/remote.conf
 
   # The new domain and participants with updated binaries
   newdomain:
@@ -134,6 +123,34 @@ services:
     ports:
       - 5003:5003
       - 5004:5004
+
+  # Helpers
+
+  console:
+    container_name: console
+    profiles:
+      - "all"
+    image: digitalasset-docker.jfrog.io/canton-enterprise:2.8.5
+    volumes:
+      - ./:/canton/host/:rw
+    command:
+      - --no-tty
+      - -c=/canton/host/configs/remote/remote.conf
+
+  startup:
+    container_name: startup
+    profiles:
+      - "startup"
+      - "all"
+    image: digitalasset-docker.jfrog.io/canton-enterprise:2.8.5
+    volumes:
+      - ./configs:/canton/host/configs:rw
+    command: run /canton/host/configs/remote/setup.canton --config "/canton/host/configs/remote/remote.conf" --log-profile container --log-level-root INFO
+    depends_on:
+      participantb:
+        condition: service_healthy
+      participanta:
+        condition: service_healthy
 
   remove_resources:
     container_name: remove_resources

@@ -1,6 +1,6 @@
 utils.retry_until_true(
-  participantA.parties.list().exists(p => p.party.uid.id == "alice")
-  && participantB.parties.list().exists(p => p.party.uid.id == "bob")
+  participanta.parties.list().exists(p => p.party.uid.id == "alice")
+  && participantb.parties.list().exists(p => p.party.uid.id == "bob")
 )
 
 utils.generate_daml_script_participants_conf(

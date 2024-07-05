@@ -6,6 +6,8 @@ This demo shows 2 possible ways of performing this.
 - Using a canton console and manually running the commands 
 - Using canton scripts to automate the process 
 
+#### _Note_ This demo assumes access to Digital Assets artifactory and enterprise images.
+
 ### Docs:
 
 * [Upgrading Protocol Version](https://docs.daml.com/Canton/usermanual/upgrading.html#change-the-Canton-protocol-version)
@@ -21,7 +23,7 @@ daml build
 ```
 docker compose --profile startup up -d
 ```
-3. Upload contracts to the participants
+3. Upload contracts to the participants once startup has completed
 ```
 docker compose run --rm contracts
 ```
@@ -42,13 +44,13 @@ docker compose run --rm  console
 3. Save the resource limits of the participants for restoring after the upgrade process and then set the limits to 0. _(Within the Canton console)_
 
 ```
-@ val participantA_resources = participantA.resources.resource_limits()
-@ utils.write_to_file(participantA_resources.toProtoV0, "/canton/host/configs/participantA_resources.pb")
-@ participantA.resources.set_resource_limits(ResourceLimits(Some(0), Some(0)))
+@ val participanta_resources = participanta.resources.resource_limits()
+@ utils.write_to_file(participanta_resources.toProtoV0, "/canton/host/configs/participanta_resources.pb")
+@ participanta.resources.set_resource_limits(ResourceLimits(Some(0), Some(0)))
 
-@ val participantB_resource = participantB.resources.resource_limits()
-@ utils.write_to_file(participantB_resource.toProtoV0, "/canton/host/configs/participantB_resource.pb")
-@ participantB.resources.set_resource_limits(ResourceLimits(Some(0), Some(0)))
+@ val participantb_resource = participantb.resources.resource_limits()
+@ utils.write_to_file(participantb_resource.toProtoV0, "/canton/host/configs/participantb_resource.pb")
+@ participantb.resources.set_resource_limits(ResourceLimits(Some(0), Some(0)))
 ```
 
 4. Backup the participant databases to allow to roll back in case of failure.
@@ -66,11 +68,11 @@ docker compose run --rm  console
 
 6. Disconnect the participants from the domain and ensure they are disconnected by listing the connected domains. This should return an empty array. _(Within the Canton console)_
 ```
-@ participantA.domains.disconnect("olddomain")
-@ participantA.domains.list_connected() 
+@ participanta.domains.disconnect("olddomain")
+@ participanta.domains.list_connected() 
 
-@ participantB.domains.disconnect("olddomain")
-@ participantB.domains.list_connected() 
+@ participantb.domains.disconnect("olddomain")
+@ participantb.domains.list_connected() 
 ```
 
 7. Migrate participants to the new domain _(Within the Canton console)_
@@ -82,30 +84,30 @@ docker compose run --rm  console
 
 * Migrate to the new domain per participant 
 ```
-@ participantA.repair.migrate_domain("olddomain", config) 
-@ participantB.repair.migrate_domain("olddomain", config) 
+@ participanta.repair.migrate_domain("olddomain", config) 
+@ participantb.repair.migrate_domain("olddomain", config) 
 ```
 
 8. Reconnect the participants. Note that if the migration has been succesful the only domain the participants should connect to is the new domain. This can be tested with:  `participant.domains.list_connected()` _(Within the Canton console)_
 ```
-@ participantA.domains.reconnect_all() 
-@ participantA.domains.list_connected() 
+@ participanta.domains.reconnect_all() 
+@ participanta.domains.list_connected() 
 
-@ participantB.domains.reconnect_all() 
-@ participantB.domains.list_connected() 
+@ participantb.domains.reconnect_all() 
+@ participantb.domains.list_connected() 
 ```
 
 9. Restore the resource limits on participants _(Within the Canton console)_
 ```
-@ participantA.resources.set_resource_limits(participantA_resources)
-@ participantB.resources.set_resource_limits(participantB_resources)
+@ participanta.resources.set_resource_limits(participanta_resources)
+@ participantb.resources.set_resource_limits(participantb_resources)
 ```
 
 10. Check to ensure system is healthy by pinging the nodes from each other _(Within the Canton console)_
 
 ```
-@ participantA.health.ping(participantB)
-@ participantB.health.ping(participantA)
+@ participanta.health.ping(participantb)
+@ participantb.health.ping(participanta)
 ```
 
 11. Remove the old existing domain
@@ -114,6 +116,10 @@ docker compose run --rm  console
 docker compose down olddomain
 ```
 
+12. Upload additional contracts to the participants as a final test.
+```
+docker compose run --rm contracts
+```
 
 ### Clean up 
 
