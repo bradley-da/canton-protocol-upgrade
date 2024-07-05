@@ -1,4 +1,4 @@
-# Demo
+# Canton Hard Domain Migration - Upgrading Protocol versions
 
 How to perform a Hard domain migration typically used in upgrading protocol versions. 
 
