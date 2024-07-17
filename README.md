@@ -1,10 +1,10 @@
-# Canton Hard Domain Migration - Upgrading Protocol versions
+# Canton Hard Domain Migration in One - Upgrading Protocol version
 
-How to perform a Hard domain migration typically used in upgrading protocol versions. 
+With the release of 2.9.1 PV versions 3 and 4 are no longer supported. 
 
-This demo shows 2 possible ways of performing this. 
-- Using a canton console and manually running the commands 
-- Using canton scripts to automate the process 
+The below demonstrates how to migrate from a sync domain running on a 2.3, 2.4, 2.5, 2.6, 2.7 or 2.8 release and protocol version 3 or 4 to a new sync domain running on the 2.9 release and protocol version 5. 
+
+Specifically in this demo we will migrate from 2.3.20 pv 3 to 2.9.1 pv 5
 
 #### _Note_ This demo assumes access to Digital Assets artifactory and enterprise images.
 
@@ -58,7 +58,7 @@ docker compose run --rm  console
 docker compose down participanta participantb
 ``` 
 
-5. Backup the participant databases to allow to roll back in case of failure.
+5. Backup the databases to allow to roll back in case of failure.
 ```
 docker cp ./configs/postgres/backup.sql canton-postgres:/docker-entrypoint-initdb.d/backup.sql
 docker exec -u postgres canton-postgres psql -f docker-entrypoint-initdb.d/backup.sql
@@ -70,18 +70,18 @@ docker exec -u postgres canton-postgres psql -f docker-entrypoint-initdb.d/backu
 docker compose --profile updated-participants up -d
 ```
 
-#### _Note_ Steps 5 - 9 can be performed via a [canton script](./configs/remote/migrate.canton). `docker compose run migrate` .
+#### _Note_ Steps 7 - 10 can be performed via a [canton script](./configs/remote/migrate.canton). `docker compose run migrate` .
 
-5. Disconnect the participants from the domain and ensure they are disconnected by listing the connected domains. This should return an empty array. _(Within the Canton console)_
+7. Disconnect the participants from all domains and ensure they are disconnected by listing the connected domains. This should return an empty array. _(Within the Canton console)_
 ```
-@ participanta.domains.disconnect("olddomain")
+@ participanta.domains.disconnect_all
 @ participanta.domains.list_connected() 
 
-@ participantb.domains.disconnect("olddomain")
+@ participantb.domains.disconnect_all
 @ participantb.domains.list_connected() 
 ```
 
-6. Migrate participants to the new domain _(Within the Canton console)_
+8. Migrate participants to the new domain _(Within the Canton console)_
 
 * Set the sequencer connection configuration for the new domain 
 ```
@@ -94,7 +94,7 @@ docker compose --profile updated-participants up -d
 @ participantb.repair.migrate_domain("olddomain", config) 
 ```
 
-7. Connect the participants to the the new domain. This can be tested with:  `participant.domains.list_connected()` _(Within the Canton console)_
+* Connect the participants to the the new domain. This can be tested with:  `participant.domains.list_connected()` _(Within the Canton console)_
 ```
 @ participanta.domains.connect(config) 
 @ participanta.domains.list_connected() 
@@ -103,26 +103,26 @@ docker compose --profile updated-participants up -d
 @ participantb.domains.list_connected() 
 ```
 
-8. Restore the resource limits on participants _(Within the Canton console)_
+9. Restore the resource limits on participants _(Within the Canton console)_
 ```
 @ participanta.resources.set_resource_limits(participanta_resources)
 @ participantb.resources.set_resource_limits(participantb_resources)
 ```
 
-9. Check to ensure system is healthy by pinging the nodes from each other _(Within the Canton console)_
+10. Check to ensure system is healthy by pinging the nodes from each other _(Within the Canton console)_
 
 ```
 @ participanta.health.ping(participantb)
 @ participantb.health.ping(participanta)
 ```
 
-10. Remove the old existing domain
+11. Remove the old existing domain
 
 ```
 docker compose down olddomain
 ```
 
-11. Upload additional contracts to the participants as a final test.
+12. Upload additional contracts to the participants as a final test.
 ```
 docker compose run --rm contracts
 ```
