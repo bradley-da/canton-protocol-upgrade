@@ -47,8 +47,8 @@ services:
       - 5001:5001
       - 5002:5002
 
-  participantb:
-    container_name: participantb
+  participantB:
+    container_name: participantB
     profiles:
       - "startup"
       - "all"
@@ -77,8 +77,8 @@ services:
       - 5005:5005
       - 5006:5006
 
-  participanta:
-    container_name: participanta
+  particiapntA:
+    container_name: participantA
     profiles:
       - "startup"
       - "all"
@@ -113,7 +113,7 @@ services:
     profiles:
       - "new-domain"
       - "all"
-    image: digitalasset-docker.jfrog.io/canton-enterprise:2.8.5
+    image: digitalasset-docker.jfrog.io/canton-enterprise:2.9.1
     volumes:
       - ./configs:/canton/host/configs:r
     command: daemon --config "/canton/host/configs/domains/newdomain.conf" --log-profile container --log-level-root INFO
@@ -124,7 +124,30 @@ services:
       - 5003:5003
       - 5004:5004
 
-  # Helpers
+  participantA_new:
+    container_name: participantA
+    profiles:
+      - "updated-participants"
+      - "all"
+    image: digitalasset-docker.jfrog.io/canton-enterprise:2.9.1
+    volumes:
+      - ./configs:/canton/host/configs:r
+      - ./.daml/dist/:/canton/host/dist/:r
+    command: daemon --config "/canton/host/configs/participants/newparticipantA.conf" --log-profile container --log-level-root Info 
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "/usr/local/bin/grpc_health_probe",
+          "--addr",
+          "participantA:5861"
+        ]
+    expose:
+      - 5007
+      - 5008
+    ports:
+      - 5007:5007
+      - 5008:5008
 
   console:
     container_name: console
