@@ -55,10 +55,20 @@ docker compose run --rm  console
 
 4. Bring down the participants
 ```
-docker compose down participantA participantB
+docker compose down participanta participantb
 ``` 
 
-4. In a production environment now would be a good time to backup the participant databases to allow for a role back in case of failure.
+5. Backup the participant databases to allow to roll back in case of failure.
+```
+docker cp ./configs/postgres/backup.sql canton-postgres:/docker-entrypoint-initdb.d/backup.sql
+docker exec -u postgres canton-postgres psql -f docker-entrypoint-initdb.d/backup.sql
+```
+
+6. Restart participants with new binaries and [migrate](https://docs.daml.com/Canton/usermanual/upgrading.html#migrating-the-database) the databases. For this demo the configuration option `Canton.participants.participant1.storage.parameters.migrate-and-start = yes` has been set within the participants config files. This allows for automatic schema migrations on startup. Therefore the nodes simply need to be restarted with the new binaries and db migrations are done automatically.
+
+```
+docker compose --profile updated-participants up -d
+```
 
 #### _Note_ Steps 5 - 9 can be performed via a [canton script](./configs/remote/migrate.canton). `docker compose run migrate` .
 
@@ -84,12 +94,12 @@ docker compose down participantA participantB
 @ participantb.repair.migrate_domain("olddomain", config) 
 ```
 
-7. Reconnect the participants. Note that if the migration has been succesful the only domain the participants should connect to is the new domain. This can be tested with:  `participant.domains.list_connected()` _(Within the Canton console)_
+7. Connect the participants to the the new domain. This can be tested with:  `participant.domains.list_connected()` _(Within the Canton console)_
 ```
-@ participanta.domains.reconnect_all() 
+@ participanta.domains.connect(config) 
 @ participanta.domains.list_connected() 
 
-@ participantb.domains.reconnect_all() 
+@ participantb.domains.connect(config)
 @ participantb.domains.list_connected() 
 ```
 
@@ -121,5 +131,5 @@ docker compose run --rm contracts
 
 Remove all containers and underlying volumes
 ```
-docker compose --profile all -v down 
+docker compose --profile all -v down --remove-orphans 
 ```

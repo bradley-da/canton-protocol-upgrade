@@ -4,9 +4,9 @@ val oldDomain = sys.env.get("OLD_DOMAIN").getOrElse(sys.error("OLD_DOMAIN is not
 val newDomain = sys.env.get("NEW_DOMAIN").getOrElse(sys.error("NEW_DOMAIN is not defined"))
 val newDomainAddress = sys.env.get("NEW_DOMAIN_ADDRESS").getOrElse(sys.error("NEW_DOMAIN_ADDRESS is not defined"))
 
-logger.info("Disconnecting all participants from the domain")
+logger.info("Disconnecting all participants from all domains")
 for (p <- participants.remote) {
-    p.domains.disconnect(oldDomain)
+    p.domains.disconnect_all()
     p.domains.list_connected() 
     logger.info(p.id + " successfully disconnected")
 }
@@ -24,17 +24,17 @@ for (p <- participants.remote) {
 logger.info("Reconnecting the participants to the new domain")
 for (p <- participants.remote) {
     logger.info("Reconnecting " + p.id + " to the new domain")
-    p.domains.reconnect_all() 
+    p.domains.connect(config) 
     p.domains.list_connected() 
-    logger.info(p.id + " successfully reconnected")
+    logger.info(p.id + " successfully connected to new domain")
 }
 
 logger.info("Restoring the participants Resource limits")
 for (p <- participants.remote) {
     logger.info("Reading " + p.id + " original resource limits from file")
-    val rl = utils.read_first_message_from_file[com.digitalasset.canton.participant.admin.v0.ResourceLimits]("/canton/host/configs/" + (p.id) + ".pb")
+    val rl = utils.read_first_message_from_file[com.digitalasset.canton.participant.admin.v0.ResourceLimits]("/canton/host/configs/" + (p.id) + "_resources.pb")
     logger.info("Restoring resource limits to " + p.id)
-    p.resources.set_resource_limits(ResourceLimits(Some(rl.maxDirtyRequests), Some(rl.maxRate),rl.maxBurstFactor))
+    p.resources.set_resource_limits(ResourceLimits(Option.when(rl.maxDirtyRequests >= 0)(rl.maxDirtyRequests), Option.when(rl.maxRate >= 0)(rl.maxRate),rl.maxBurstFactor))
 }
 
 logger.info("Testing system health with cross participant pings")

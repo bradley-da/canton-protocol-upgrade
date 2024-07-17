@@ -3,7 +3,7 @@ val logger = consoleEnvironment.environment.loggerFactory.getLogger(this.getClas
 for (p <- participants.remote) {
     logger.info("Saving " + p.id + " resources to file")
     val resources = p.resources.resource_limits()
-    utils.write_to_file(resources.toProtoV0, "/canton/host/configs/" + (p.id) + ".pb")
+    utils.write_to_file(resources.toProtoV0, "/canton/host/configs/" + (p.id) + "_resources.pb")
     logger.info("Stopping all traffic to " + p.id)
     p.resources.set_resource_limits(ResourceLimits(Some(0), Some(0))) 
     logger.info(p.id + " Resource limits successfully set to 0")

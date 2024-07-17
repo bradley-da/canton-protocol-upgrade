@@ -28,8 +28,8 @@ template Agreement
 
 setup : Script()
 setup = void do
-  alice <- findOrAllocatePartyOn "alice" $ ParticipantName "participantA"
-  bob <- findOrAllocatePartyOn "bob" $ ParticipantName "participantB" 
+  alice <- findOrAllocatePartyOn "alice" $ ParticipantName "participanta"
+  bob <- findOrAllocatePartyOn "bob" $ ParticipantName "participantb" 
   
   debugRaw $ "Creating agreements for " <> show alice
   proposals <- forA [1..5] \_ -> submit alice do createCmd AgreementProposal with proposer = alice, proposee = bob 

@@ -1,2 +1,2 @@
-CREATE DATABASE participantA_backup WITH TEMPLATE participantA OWNER canton;
-CREATE DATABASE participantB_backup WITH TEMPLATE participantB OWNER canton;
+CREATE DATABASE participanta_backup WITH TEMPLATE participanta OWNER canton;
+CREATE DATABASE participantb_backup WITH TEMPLATE participantb OWNER canton;
