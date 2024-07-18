@@ -10,7 +10,8 @@ Specifically in this demo we will migrate from 2.3.20 pv 3 to 2.9.1 pv 5
 
 ### Docs:
 
-* [Upgrading Protocol Version](https://docs.daml.com/Canton/usermanual/upgrading.html#change-the-Canton-protocol-version)
+* [Upgrading To a New Release](https://docs.daml.com/canton/usermanual/upgrading.html)
+* [One-Step Migration](https://docs.daml.com/canton/usermanual/upgrading.html#one-step-migration)
 
 ## Steps
 
