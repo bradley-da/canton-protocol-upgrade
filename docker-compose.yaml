@@ -27,6 +27,8 @@ services:
       - 5432
     ports:
       - 5432:5432
+  
+  # Original domain and participants
 
   olddomain:
     container_name: olddomain
@@ -47,8 +49,8 @@ services:
       - 5001:5001
       - 5002:5002
 
-  participantB:
-    container_name: participantB
+  participantb:
+    container_name: participantb
     profiles:
       - "startup"
       - "all"
@@ -69,8 +71,8 @@ services:
       - 5005:5005
       - 5006:5006
 
-  particiapntA:
-    container_name: participantA
+  participanta:
+    container_name: participanta
     profiles:
       - "startup"
       - "all"
@@ -91,7 +93,8 @@ services:
       - 5007:5007
       - 5008:5008
 
-  # The new domain and participants with updated binaries
+  # New domain and participants with updated binaries
+
   newdomain:
     container_name: newdomain
     profiles:
@@ -170,7 +173,7 @@ services:
     command:
       - --no-tty
       - -c=/canton/host/configs/remote/remote.conf
-
+  
   startup:
     container_name: startup
     profiles:
@@ -193,7 +196,18 @@ services:
     image: digitalasset-docker.jfrog.io/canton-enterprise:2.9.1
     volumes:
       - ./configs:/canton/host/configs:rw
-    command: run /canton/host/configs/remote/remove-resources.canton --config "/canton/host/configs/remote/remote.conf" --log-profile container --log-level-root INFO
+      - ./canton-scripts:/canton/host/canton-scripts:r
+    command: run /canton/host/canton-scripts/remove-resources.canton --config "/canton/host/configs/remote/remote.conf" --log-profile container --log-level-root INFO
+  
+  restore_and_test:
+    container_name: restore_aand_test
+    profiles:
+      - "all"
+    image: digitalasset-docker.jfrog.io/canton-enterprise:2.9.1
+    volumes:
+      - ./configs:/canton/host/configs:rw
+      - ./canton-scripts:/canton/host/canton-scripts:r
+    command: run /canton/host/canton-scripts/restore-resources-and-test.canton --config "/canton/host/configs/remote/remote.conf" --log-profile container --log-level-root INFO
 
   migrate:
     container_name: migrate
@@ -206,7 +220,8 @@ services:
       - NEW_DOMAIN_ADDRESS=http://newdomain:5003
     volumes:
       - ./configs:/canton/host/configs:rw
-    command: run /canton/host/configs/remote/migrate.canton --config "/canton/host/configs/remote/remote.conf" --log-profile container --log-level-root INFO
+      - ./canton-scripts:/canton/host/canton-scripts:r
+    command: run /canton/host/canton-scripts/migrate.canton --config "/canton/host/configs/remote/remote.conf" --log-profile container --log-level-root INFO
 
   contracts:
     container_name: contracts

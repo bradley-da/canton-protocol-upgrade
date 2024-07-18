@@ -1,0 +1,17 @@
+val logger = consoleEnvironment.environment.loggerFactory.getLogger(this.getClass)
+
+logger.info("Restoring the participants Resource limits")
+for (p <- participants.remote) {
+    logger.info("Reading " + p.id + " original resource limits from file")
+    val rl = utils.read_first_message_from_file[com.digitalasset.canton.participant.admin.v0.ResourceLimits]("/canton/host/configs/" + (p.id) + "_resources.pb")
+    logger.info("Restoring resource limits to " + p.id)
+    p.resources.set_resource_limits(ResourceLimits(Option.when(rl.maxDirtyRequests >= 0)(rl.maxDirtyRequests), Option.when(rl.maxRate >= 0)(rl.maxRate),rl.maxBurstFactor))
+}
+
+logger.info("Testing system health with cross participant pings")
+for (p1 <- participants.remote) {
+  for (p2 <- participants.remote) {
+    logger.info("Pinging " + p2.id + " from " + p1.id)
+    p1.health.ping(p2.id)
+  }
+}

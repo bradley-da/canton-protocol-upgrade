@@ -34,7 +34,7 @@ docker compose run --rm contracts
 docker compose --profile new-domain up -d
 ```
 
-#### _Note_ Alternatively steps 2 and 3 below can be performed via a [canton script](./configs/remote/remove-resources.canton). `docker compose run remove_resources`
+#### _Note_ Alternatively steps 2 and 3 below can be performed via a [canton script](./canton-scripts/remove-resources.canton). `docker compose run remove_resources`
 
 2. Enter a Canton console from a new terminal connected to both domains as well as the participants. Note the flag `features.enable-repair-commands=yes` must be enabled within the remote config.
 ```
@@ -58,7 +58,7 @@ docker compose run --rm  console
 docker compose down participanta participantb
 ``` 
 
-5. Backup the databases to allow to roll back in case of failure.
+5. Backup the databases. *Note: before migrating it is also recommended to `VACUUM` the databases.*
 ```
 docker cp ./configs/postgres/backup.sql canton-postgres:/docker-entrypoint-initdb.d/backup.sql
 docker exec -u postgres canton-postgres psql -f docker-entrypoint-initdb.d/backup.sql
@@ -70,7 +70,7 @@ docker exec -u postgres canton-postgres psql -f docker-entrypoint-initdb.d/backu
 docker compose --profile updated-participants up -d
 ```
 
-#### _Note_ Steps 7 - 10 can be performed via a [canton script](./configs/remote/migrate.canton). `docker compose run migrate` .
+#### _Note_ Steps 7 - 8 can be performed via a [canton script](./canton-scripts/migrate.canton). `docker compose run migrate` .
 
 7. Disconnect the participants from all domains and ensure they are disconnected by listing the connected domains. This should return an empty array. _(Within the Canton console)_
 ```
@@ -102,6 +102,8 @@ docker compose --profile updated-participants up -d
 @ participantb.domains.connect(config)
 @ participantb.domains.list_connected() 
 ```
+
+#### _Note_ Steps 9 - 10 can be performed via a [canton script](./canton-scripts/migrate.canton). `docker compose run restore_and_test` .
 
 9. Restore the resource limits on participants _(Within the Canton console)_
 ```
