@@ -116,5 +116,5 @@ docker compose run --rm contracts
 
 Remove all containers and underlying volumes
 ```
-docker compose --profile all -v down 
+docker compose --profile all -v down
 ```
